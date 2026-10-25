@@ -4,7 +4,7 @@ Trasforma il report mensile di un provider welfare nel tracciato di import delle
 voci retributive del gestionale paghe (`VOCI_<ditta>_<AAAAMM>.txt`, record a
 lunghezza fissa di 38 caratteri).
 
-**App online:** _link in arrivo_
+**App online:** https://convertitore-welfare.streamlit.app/
 
 ## Stato dei lavori
 
@@ -13,7 +13,7 @@ lunghezza fissa di 38 caratteri).
 | 1 | Motore di conversione + test sul Provider A | fatto: output identico all'esempio |
 | 2 | Configurazione dei Provider B–E | fatto |
 | 3 | Interfaccia web (Streamlit) | fatto |
-| 4 | Pubblicazione online | da fare |
+| 4 | Pubblicazione online | fatto: https://convertitore-welfare.streamlit.app/ |
 
 ## Struttura del progetto
 
