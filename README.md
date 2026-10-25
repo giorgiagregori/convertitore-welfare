@@ -9,6 +9,8 @@ lunghezza fissa di 38 caratteri).
 - conversione singola: https://convertitore-welfare.streamlit.app/
 - caricamento massivo: https://convertitore-welfare-massivo.streamlit.app/
 
+**Video di presentazione:** https://www.loom.com/share/2f6fcffc85154798aed9979d2b10b933
+
 ## Struttura del progetto
 
 ```
