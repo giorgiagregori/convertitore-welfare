@@ -44,6 +44,8 @@ class Movimento:
     codice_fiscale: Optional[str] = None
     codice: Optional[str] = None
     nome: Optional[tuple] = None               # (cognome, nome) o (nome completo,)
+    origine: Optional[str] = None              # file di provenienza (caricamento massivo)
+    formato_importo: Optional[str] = None      # se valorizzato, prevale su quello generale
 
     def descrizione_dipendente(self) -> str:
         """Come il provider indica il dipendente: è ciò che si legge negli scarti."""
@@ -93,6 +95,7 @@ class Segnalazione:
     motivo: str
     cosa_fare: str = ""
     valore: Optional[Decimal] = None     # importo letto, se leggibile
+    origine: str = ""                    # file di provenienza (caricamento massivo)
 
 
 @dataclass
@@ -206,7 +209,7 @@ def converti(movimenti, ditta, periodo, anagrafica: Anagrafica, tabella: Tabella
         # 1) importo
         valore = None
         try:
-            valore = leggi_importo(m.importo, formato_importo)
+            valore = leggi_importo(m.importo, m.formato_importo or formato_importo)
             ris.totale_letto += valore
         except ImportoNonLeggibile as errore:
             ris.importi_non_leggibili += 1
@@ -218,7 +221,8 @@ def converti(movimenti, ditta, periodo, anagrafica: Anagrafica, tabella: Tabella
         def avviso(testo):
             avvisi_riga.append(Segnalazione(
                 AVVISO, m.riga, m.descrizione_dipendente(), str(m.trattamento or ""), sotto,
-                formatta_euro(valore) if valore is not None else str(m.importo), testo))
+                formatta_euro(valore) if valore is not None else str(m.importo), testo,
+                origine=m.origine or ""))
 
         # 2) dipendente
         codice = None
@@ -268,7 +272,7 @@ def converti(movimenti, ditta, periodo, anagrafica: Anagrafica, tabella: Tabella
                 SCARTO, m.riga, m.descrizione_dipendente(), str(m.trattamento or ""), sotto,
                 formatta_euro(valore) if valore is not None else str(m.importo),
                 "; ".join(problemi), "; ".join(dict.fromkeys(r for r in rimedi if r)),
-                valore))
+                valore, origine=m.origine or ""))
             if valore is not None:
                 ris.totale_scartato += valore
             continue
@@ -287,7 +291,7 @@ def converti(movimenti, ditta, periodo, anagrafica: Anagrafica, tabella: Tabella
                     f"Totale negativo per dipendente {codice} e voce {voce} "
                     f"({formatta_euro(totale)} €): il tracciato non ammette importi negativi",
                     "Verificare con il provider lo storno e gestirlo a mano nel gestionale",
-                    valore))
+                    valore, origine=m.origine or ""))
             ris.totale_scartato += totale
             continue
         if totale == 0:
@@ -301,7 +305,8 @@ def converti(movimenti, ditta, periodo, anagrafica: Anagrafica, tabella: Tabella
                 ris.segnalazioni.append(Segnalazione(
                     SCARTO, m.riga, m.descrizione_dipendente(), str(m.trattamento or ""),
                     str(m.sottocategoria or "").strip(), formatta_euro(valore),
-                    f"Record non scrivibile: {errore}", "Verificare codice dipendente e voce", valore))
+                    f"Record non scrivibile: {errore}", "Verificare codice dipendente e voce", valore,
+                    origine=m.origine or ""))
             ris.totale_scartato += totale
             continue
         ris.record.append((codice, voce, record))
@@ -311,7 +316,7 @@ def converti(movimenti, ditta, periodo, anagrafica: Anagrafica, tabella: Tabella
     # 6) ordinamento: codice dipendente (numerico), poi voce
     ris.record.sort(key=lambda r: (_ordine_codice(r[0]), _ordine_codice(r[1])))
     ris.record = [r[2] for r in ris.record]
-    ris.segnalazioni.sort(key=lambda s: (s.riga or 0, s.tipo != SCARTO))
+    ris.segnalazioni.sort(key=lambda s: (s.origine, s.riga or 0, s.tipo != SCARTO))
 
     # 7) controllo sulla ditta scelta
     if ris.righe_lette and dipendenti_non_trovati > ris.righe_lette / 2:

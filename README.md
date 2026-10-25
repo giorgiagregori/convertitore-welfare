@@ -29,13 +29,15 @@ convertitore_welfare/
 │   ├── tracciato.py         scrittura del record da 38 caratteri
 │   ├── ditte.py             proposta della ditta dai dipendenti del file
 │   ├── periodo.py           scelta di mese e anno del cedolino
+│   ├── massivo.py           caricamento massivo: analisi e conversione di un lotto di file
 │   └── servizio.py          punto di ingresso unico (lo userà l'interfaccia)
 ├── config/
 │   ├── providers.json       una configurazione per provider
 │   ├── Lista_Dipendenti.csv
 │   └── Codici_Welfare_Voci_Payroll.csv
 ├── tests/                   test automatici e file del kit usati come casi di prova
-├── app.py                   interfaccia web (Streamlit)
+├── app.py                   interfaccia web (Streamlit), un file per volta
+├── app_massivo.py           interfaccia web per il caricamento massivo
 ├── converti.py              uso da terminale
 ├── requirements.txt
 └── README.md
@@ -140,6 +142,44 @@ Il file deve essere del provider scelto; il programma lo verifica così:
 
 Il test `tests/test_controlli_file.py` prova tutte le 25 combinazioni
 provider/file del kit: si converte solo quando coincidono.
+
+## Caricamento massivo (evoluzione)
+
+`app_massivo.py` è una seconda app, sullo stesso motore, pensata per il lavoro
+di fine mese: invece di convertire un file per volta si caricano **tutti i
+report del mese insieme**.
+
+```
+streamlit run app_massivo.py
+```
+
+1. **Periodo e file**: mese, anno e tutti i file in un colpo solo.
+2. **Controlla i file**: per ogni file l'app riconosce il **provider** dalle
+   colonne (lo stesso controllo che nell'app singola dice "il file sembra del
+   Provider B") e propone la **ditta** dai dipendenti. Ogni file ha uno stato:
+   ✅ pronto, ⚠️ da guardare (ditta da scegliere, nome del file insolito, provider
+   ambiguo), ❌ bloccato (non leggibile, di nessun provider, nessun dipendente in
+   anagrafica, caricato due volte). Provider e ditta si possono cambiare, e un
+   file si può escludere.
+3. **Esito**: una riga per ditta con file, provider, record, scarti, avvisi e
+   quadratura.
+4. **Correzioni**, solo per le ditte con scarti, come nell'app singola.
+5. **Download**: uno zip con un file `VOCI_<ditta>_<AAAAMM>.txt` per ditta e un
+   unico `SCARTI_<AAAAMM>.csv`, con in più le colonne File, Provider e Ditta.
+
+Regole del lotto (`convertitore/massivo.py`):
+
+- **Più file per la stessa ditta** (anche di provider diversi): i movimenti
+  vengono convertiti insieme ed esce **un solo file VOCI** per la ditta; lo stesso
+  dipendente sulla stessa voce viene sommato. La quadratura vale per ditta.
+- **Stesso file caricato due volte** (stesso contenuto, anche con nome diverso):
+  il secondo viene bloccato, altrimenti gli importi raddoppierebbero.
+- Ogni movimento porta con sé il file di provenienza e il formato degli importi
+  del suo provider, perché nello stesso lotto convivono formati diversi
+  (`1.234,56` e `1,234.56`).
+
+Con i 5 file del kit caricati insieme il risultato è identico, file per file, a
+quello delle 5 conversioni singole (verificato da `tests/test_massivo.py`).
 
 ## Come viene proposta la ditta
 
@@ -299,6 +339,10 @@ N = allineato a destra con zeri; A = allineato a sinistra con spazi.
 34. Separatore dei csv: vince il separatore che dà più colonne tra quelli
     costanti su almeno l'80% delle righe, così una riga anomala non fa
     scambiare la virgola dei decimali per il separatore.
+35. Caricamento massivo: se più file riguardano la stessa ditta nello stesso
+    periodo si produce un solo file VOCI (il gestionale riceve un file per ditta,
+    come da specifica) sommando dipendente e voce; il totale negativo si valuta
+    sulla somma di tutti i file della ditta.
 
 ## Verifiche fatte sui dati del kit
 
