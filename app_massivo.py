@@ -25,6 +25,18 @@ st.set_page_config(page_title="Convertitore welfare - massivo", page_icon="🗂�
 
 ICONA = {PRONTO: "✅", DA_GUARDARE: "⚠️", BLOCCATO: "❌"}
 
+# Etichette dei menu a scelta multipla (provider e ditte) in blu chiaro invece
+# del rosso predefinito di Streamlit.
+st.markdown("""
+<style>
+span[data-baseweb="tag"] {
+    background-color: #DCEBFA !important;
+    color: #1A4E8A !important;
+}
+span[data-baseweb="tag"] svg { fill: #1A4E8A !important; }
+</style>
+""", unsafe_allow_html=True)
+
 
 @st.cache_resource
 def carica_convertitore() -> Convertitore:
