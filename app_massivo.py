@@ -64,8 +64,13 @@ col_mese, col_anno, col_prov = st.columns([2, 1, 4])
 mese = col_mese.selectbox("Mese del cedolino", range(1, 13), index=mese_proposto - 1,
                           format_func=lambda m: MESI[m - 1])
 anno = col_anno.selectbox("Anno", anni, index=anni.index(anno_proposto))
-providers_scelti = col_prov.multiselect("Provider", list(conv.providers), default=list(conv.providers),
-                                        placeholder="Scegli uno o più provider")
+# Menu a tendina a scelta multipla, vuoto all'inizio: con tutti i provider già
+# selezionati la tendina risulterebbe vuota e sembrerebbe di non poter scegliere.
+tutti = col_prov.checkbox("Tutti i provider", value=False)
+providers_scelti = col_prov.multiselect(
+    "Provider (puoi sceglierne più di uno)", list(conv.providers),
+    default=list(conv.providers) if tutti else [], disabled=tutti,
+    placeholder="Apri il menu e scegli uno o più provider", key=f"providers_{tutti}")
 periodo_scelto = periodo(anno, mese)
 avviso = avviso_periodo(anno, mese, oggi)
 if avviso:

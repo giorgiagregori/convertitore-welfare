@@ -154,7 +154,8 @@ streamlit run app_massivo.py
 ```
 
 1. **Cosa converti**: mese e anno, **uguali per tutti i file**, e i provider
-   da elaborare (scelta multipla, di partenza tutti).
+   da elaborare (menu a tendina a scelta multipla, oppure la casella *Tutti i
+   provider*).
 2. **Carica i file**: tutti i report insieme.
 3. **Riepilogo dei file**: una tabella, senza niente da scegliere file per file.
    Per ogni file l'app riconosce il **provider** dalle colonne e la **ditta** dai
