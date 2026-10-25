@@ -4,7 +4,10 @@ Trasforma il report mensile di un provider welfare nel tracciato di import delle
 voci retributive del gestionale paghe (`VOCI_<ditta>_<AAAAMM>.txt`, record a
 lunghezza fissa di 38 caratteri).
 
-**App online:** https://convertitore-welfare.streamlit.app/
+**App online:**
+
+- conversione singola: https://convertitore-welfare.streamlit.app/
+- caricamento massivo: https://convertitore-welfare-massivo.streamlit.app/
 
 ## Stato dei lavori
 
@@ -145,7 +148,8 @@ provider/file del kit: si converte solo quando coincidono.
 
 ## Caricamento massivo (evoluzione)
 
-`app_massivo.py` è una seconda app, sullo stesso motore, pensata per il lavoro
+`app_massivo.py` è una seconda app, sullo stesso motore (online:
+https://convertitore-welfare-massivo.streamlit.app/), pensata per il lavoro
 di fine mese: invece di convertire un file per volta si caricano **tutti i
 report del mese insieme**.
 
