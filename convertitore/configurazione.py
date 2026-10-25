@@ -101,11 +101,8 @@ def _trova_intestazione(righe: list, colonne: list, provider: str):
 def _verifica_controlli(dati: list, conf: dict, provider: str, valore):
     """Controlla che le righe di dati abbiano la forma attesa per il provider.
 
-    Indispensabile per i file senza intestazione (Provider B): lì le colonne si
-    prendono per posizione, quindi senza questi controlli qualsiasi file con
-    abbastanza colonne verrebbe letto, producendo solo scarti senza senso.
-    Basta una riga diversa per fermarsi: meglio un file rifiutato che un file
-    VOCI costruito sui dati di un altro provider.
+    Serve soprattutto per i file senza intestazione (Provider B), dove le
+    colonne si prendono per posizione. Una sola riga fuori formato blocca il file.
     """
     controlli = conf.get("controlli", {})
     attese = controlli.get("colonne")

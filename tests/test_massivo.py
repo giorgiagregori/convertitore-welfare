@@ -11,10 +11,9 @@ from convertitore.massivo import (BLOCCATO, Scelta, analizza_file, analizza_lott
 from convertitore.motore import Correzioni
 from convertitore.servizio import Convertitore
 
-CARTELLA = Path(__file__).parent / "dati_kit"
-INPUT = CARTELLA / "input"
-FILE_KIT = ["ProviderA_*", "ProviderB_*", "ProviderC_convertito_per_test.xlsx",
-            "ProviderD_*", "ProviderE_*"]
+from comune import CARTELLA, FILE_C, INPUT, SENZA_XLRD, XLRD_DISPONIBILE
+
+FILE_KIT = ["ProviderA_*", "ProviderB_*", FILE_C, "ProviderD_*", "ProviderE_*"]
 
 # Un piccolo file "del Provider D" inventato per la ditta 4012: Bellini (codice 4)
 # compare anche nel file del Provider A, quindi i due file vanno uniti.
@@ -31,6 +30,7 @@ def leggi(schema):
     return percorso.name, percorso.read_bytes()
 
 
+@unittest.skipUnless(XLRD_DISPONIBILE, SENZA_XLRD)
 class TestMassivo(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

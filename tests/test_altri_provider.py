@@ -1,19 +1,16 @@
-"""Passo 2: prova completa sui file dei Provider B, C, D, E del kit.
+"""Prova completa sui file dei Provider B, C, D, E del kit.
 
 Per ogni provider si controllano: righe lette, record, scarti attesi (quelli
 individuati leggendo il kit), avvisi, quadratura e alcuni record campione.
 """
 
-import importlib.util
 import unittest
 from decimal import Decimal
-from pathlib import Path
 
 from convertitore.lettura import _separatore
 from convertitore.servizio import Convertitore
 
-INPUT = Path(__file__).parent / "dati_kit" / "input"
-XLRD_DISPONIBILE = importlib.util.find_spec("xlrd") is not None
+from comune import FILE_C, INPUT, SENZA_XLRD, XLRD_DISPONIBILE
 
 
 class Base(unittest.TestCase):
@@ -64,16 +61,9 @@ class TestProviderB(Base):
 class TestProviderC(Base):
     """Excel .xls, trattamento su due colonne, sottocategoria Effettivo/Figurativo."""
 
-    def file_c(self):
-        # Online xlrd è installato e si usa il file .xls originale. Dove xlrd non
-        # c'è (l'ambiente di sviluppo) si usa una copia convertita in .xlsx con
-        # gli stessi dati.
-        if XLRD_DISPONIBILE:
-            return "ProviderC_Erogazioni_fatt_031900.xls"
-        return "ProviderC_convertito_per_test.xlsx"
-
+    @unittest.skipUnless(XLRD_DISPONIBILE, SENZA_XLRD)
     def test_completo(self):
-        ris = self.converti("Provider C", self.file_c(), "4041")
+        ris = self.converti("Provider C", FILE_C, "4041")
         self.controlla(ris, 20, 17, 0, 1, "5346.93", "5346.93", "0")
         # Art.51 c. 3 Effettivo -> 194; Figurativo -> 371 (per somiglianza, con avviso).
         self.assertIn("00404120    194 0000000000031210202609", ris.record)
@@ -81,11 +71,6 @@ class TestProviderC(Base):
         self.assertIn("somiglianza", ris.avvisi[0].motivo)
         # Ferrari Galli, tre rimborsi f bis (570 + 248,60 + 518,32) -> 1.336,92 su 372.
         self.assertIn("00404113    372 0000000000133692202609", ris.record)
-
-    @unittest.skipUnless(XLRD_DISPONIBILE, "xlrd non installato: test sul .xls originale saltato")
-    def test_xls_originale(self):
-        ris = self.converti("Provider C", "ProviderC_Erogazioni_fatt_031900.xls", "4041")
-        self.assertEqual(len(ris.record), 17)
 
 
 class TestProviderD(Base):

@@ -10,9 +10,8 @@ Poi:
     6. ordina e scrive i record             (tracciato.py)
     7. calcola la quadratura: totale letto = totale esportato + totale scartato
 
-Niente sparisce in silenzio: ogni riga non esportata finisce nel file scarti con
-il motivo, e ogni scelta "non scontata" (abbinamento per somiglianza, codice o
-voce inseriti a mano) compare come AVVISO.
+Ogni riga non esportata finisce nel file scarti con il motivo; abbinamenti per
+somiglianza e codici o voci inseriti a mano compaiono come AVVISO.
 """
 
 import csv

@@ -65,7 +65,7 @@ class TestFormatiGenerali(unittest.TestCase):
 
     def test_formato_dichiarato_sbagliato_non_legge_male(self):
         # Se un provider dichiarato "it" mandasse "15.88", NON deve diventare 1588:
-        # meglio uno scarto che un importo moltiplicato per cento.
+        # va scartato, non letto come un importo cento volte più grande.
         with self.assertRaises(ImportoNonLeggibile):
             leggi_importo("15.88", "it")
 

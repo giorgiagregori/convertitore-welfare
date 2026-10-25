@@ -6,7 +6,7 @@ from convertitore.ditte import proponi_ditta
 from convertitore.motore import Movimento
 from convertitore.servizio import Convertitore
 
-INPUT = Path(__file__).parent / "dati_kit" / "input"
+from comune import FILE_C, INPUT, XLRD_DISPONIBILE
 
 
 class TestPropostaDitta(unittest.TestCase):
@@ -21,10 +21,12 @@ class TestPropostaDitta(unittest.TestCase):
     def test_ditte_dei_file_del_kit(self):
         casi = [("Provider A", "ProviderA_*", "4012"),
                 ("Provider B", "ProviderB_*", "4027"),
-                ("Provider C", "ProviderC_convertito_per_test.xlsx", "4041"),
+                ("Provider C", FILE_C, "4041"),
                 ("Provider D", "ProviderD_*", "4093"),
                 ("Provider E", "ProviderE_*", "4131")]
         for provider, schema, attesa in casi:
+            if schema == FILE_C and not XLRD_DISPONIBILE:
+                continue
             with self.subTest(provider=provider):
                 proposta = self.proponi(provider, schema)
                 self.assertEqual(proposta.ditta, attesa, proposta.motivo)

@@ -108,17 +108,11 @@ def _leggi_csv(contenuto: bytes) -> list:
 
 
 def _separatore(testo: str) -> str:
-    """Sceglie il separatore che divide le righe in un numero di colonne
-    costante e maggiore di uno.
+    """Sceglie il separatore dei csv.
 
-    Non si usa il riconoscimento automatico di Python (csv.Sniffer) perché con
-    importi come "60,00" scambia la virgola dei decimali per il separatore:
-    succedeva proprio con il file del Provider B.
-    Tra i separatori "abbastanza costanti" (almeno l'80% delle righe con lo
-    stesso numero di colonne) vince quello che dà più colonne: così una sola riga
-    anomala non fa scegliere la virgola dei decimali, che darebbe 2 colonne su
-    tutte le righe (caso trovato con i test sul Provider B).
-    A parità di risultato si preferisce ";" (lo standard dei csv italiani).
+    Non uso csv.Sniffer: con importi come "60,00" prende la virgola dei
+    decimali per separatore (file del Provider B). Tra i separatori costanti su
+    almeno l'80% delle righe vince quello con più colonne; a parità, ";".
     """
     righe = [r for r in testo.splitlines()[:30] if r.strip()]
     migliore, punteggio_migliore = ";", (False, 0, 0)

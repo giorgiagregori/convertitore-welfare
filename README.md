@@ -9,15 +9,6 @@ lunghezza fissa di 38 caratteri).
 - conversione singola: https://convertitore-welfare.streamlit.app/
 - caricamento massivo: https://convertitore-welfare-massivo.streamlit.app/
 
-## Stato dei lavori
-
-| Passo | Contenuto | Stato |
-|---|---|---|
-| 1 | Motore di conversione + test sul Provider A | fatto: output identico all'esempio |
-| 2 | Configurazione dei Provider B–E | fatto |
-| 3 | Interfaccia web (Streamlit) | fatto |
-| 4 | Pubblicazione online | fatto: https://convertitore-welfare.streamlit.app/ |
-
 ## Struttura del progetto
 
 ```
@@ -75,8 +66,8 @@ Si apre il browser su `http://localhost:8501`. Il percorso è guidato:
    riconosciuti (es. `4012 – Alfa Servizi S.r.l. · 8 dipendenti su 9`); la prima
    è preselezionata se la proposta convince. Se nessun dipendente è in
    anagrafica la conversione è bloccata. Il periodo si sceglie con due menu,
-   mese e anno; è già proposto il mese precedente a oggi (vedi assunzione 32). Il pulsante *Converti* si attiva solo quando i dati sono
-   completi e validi.
+   mese e anno; è già proposto il mese precedente a oggi (vedi assunzione 31).
+   Il pulsante *Converti* si attiva solo quando i dati sono completi e validi.
 2. **Esito**: righe lette, record prodotti, scarti, avvisi e quadratura
    (totale letto = esportato + scartato). Se ci sono scarti compare un avviso
    con il numero di righe e l'importo escluso.
@@ -322,42 +313,36 @@ N = allineato a destra con zeri; A = allineato a sinistra con spazi.
 26. Le righe completamente vuote, e quelle senza dipendente, trattamento e
     importo (es. note o totali in fondo al file), non sono movimenti e si saltano;
     la numerazione delle righe resta quella del file originale.
-27. pandas, previsto tra le librerie possibili, non è servito: bastano openpyxl
-    (xlsx), xlrd (xls) e la libreria standard di Python. Meno dipendenze, meno
-    cose che si possono rompere.
-28. Il separatore dei csv si sceglie contando le colonne: quello che divide
-    tutte le righe nello stesso numero di colonne. Il riconoscimento automatico
-    di Python scambiava la virgola dei decimali ("60,00") per il separatore.
-29. Provider C: nell'ambiente di sviluppo la libreria per i .xls non era
-    installabile, quindi il test usa una copia del file convertita in .xlsx con
-    gli stessi dati; dove xlrd è installato (online) si testa il .xls originale.
-
-30. Il kit non dice quali ditte segue ogni provider: per non mantenere un
+27. Niente pandas: bastano openpyxl (xlsx), xlrd (xls) e la libreria standard
+    di Python. Meno dipendenze, meno cose che si possono rompere.
+28. Il separatore dei csv si sceglie contando le colonne: vince quello che dà
+    più colonne tra quelli costanti su almeno l'80% delle righe. Il
+    riconoscimento automatico di Python scambiava la virgola dei decimali
+    ("60,00") per il separatore, e una sola riga anomala non deve bastare a
+    fargli cambiare idea.
+29. Il kit non dice quali ditte segue ogni provider: per non mantenere un
     elenco a mano, la ditta viene proposta dai dipendenti del file (soglia: più
     della metà riconosciuti, nessun pareggio). Per A la proposta coincide con il
     nome del file di esempio (`VOCI_4012_202609.txt`).
-31. Ragione sociale: se in anagrafica una ditta ha più scritture, si usa la più
+30. Ragione sociale: se in anagrafica una ditta ha più scritture, si usa la più
     frequente (la 4175 compare come "Tiglio Lab S.r.l." e "Tiglio Lab S.R.L.").
-32. Periodo: non è limitato "dal mese corrente in avanti", perché il report
+31. Periodo: non è limitato "dal mese corrente in avanti", perché il report
     arriva a mese chiuso (quello di settembre arriva a ottobre e va nel periodo
     202609, come nel kit) e a volte serve rifare una conversione passata. Si
     possono scegliere l'anno precedente, il corrente e il successivo; è proposto
     il mese precedente a oggi; per un mese futuro o di più di un mese fa compare
     un avviso, ma la conversione non viene bloccata.
-33. Il nome del file è solo un avviso e non un blocco: i nomi del kit seguono
+32. Il nome del file è solo un avviso e non un blocco: i nomi del kit seguono
     uno schema per provider, ma nella pratica i file si rinominano; il controllo
     vero è sul contenuto.
-34. Separatore dei csv: vince il separatore che dà più colonne tra quelli
-    costanti su almeno l'80% delle righe, così una riga anomala non fa
-    scambiare la virgola dei decimali per il separatore.
-35. Caricamento massivo: se più file riguardano la stessa ditta nello stesso
+33. Caricamento massivo: se più file riguardano la stessa ditta nello stesso
     periodo si produce un solo file VOCI (il gestionale riceve un file per ditta,
     come da specifica) sommando dipendente e voce; il totale negativo si valuta
     sulla somma di tutti i file della ditta.
 
 ## Verifiche fatte sui dati del kit
 
-- **Tutti i provider** (passo 2):
+- **Tutti i provider:**
 
   | Provider | Ditta | Righe | Record | Scarti | Avvisi | Quadratura (letto = esportato + scartato) |
   |---|---|---|---|---|---|---|
@@ -367,7 +352,7 @@ N = allineato a destra con zeri; A = allineato a sinistra con spazi.
   | D | 4093 | 17 | 12 | 1 Asilo nido, 1 Matteo Martini | 0 | 2.897,26 = 2.453,17 + 444,09 |
   | E | 4131 | 19 | 11 | 3 Guerra Paolo | 2 | 2.051,86 = 1.897,10 + 154,76 |
 
-- **Provider A, criterio di accettazione:** senza correzioni 18 record, 1 scarto
+- **Provider A, confronto con l'esempio del kit:** senza correzioni 18 record, 1 scarto
   (Alessia Fumagalli, riga 8, 56,16 €) e 4 avvisi; quadratura 1.990,02 =
   1.933,86 + 56,16. Con Fumagalli = 25 inserito a mano il file VOCI è
   **identico byte per byte** a `ESEMPIO_VOCI_4012_202609.txt`.

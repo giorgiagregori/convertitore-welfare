@@ -7,14 +7,17 @@ from pathlib import Path
 from convertitore.configurazione import FileNonCorrispondente
 from convertitore.servizio import Convertitore
 
-INPUT = Path(__file__).parent / "dati_kit" / "input"
+from comune import FILE_C, INPUT, XLRD_DISPONIBILE
 FILE = {
     "Provider A": "ProviderA_*",
     "Provider B": "ProviderB_*",
-    "Provider C": "ProviderC_convertito_per_test.xlsx",
+    "Provider C": FILE_C,
     "Provider D": "ProviderD_*",
     "Provider E": "ProviderE_*",
 }
+
+
+PROVIDER_PROVABILI = [p for p in FILE if p != "Provider C" or XLRD_DISPONIBILE]
 
 
 def file_di(provider):
@@ -29,8 +32,8 @@ class TestControlliFile(unittest.TestCase):
     def test_ogni_file_solo_col_suo_provider(self):
         """Tutte le 25 combinazioni: si converte solo quando file e provider coincidono,
         altrimenti il messaggio dice di quale provider sembra il file."""
-        for scelto in FILE:
-            for vero in FILE:
+        for scelto in PROVIDER_PROVABILI:
+            for vero in PROVIDER_PROVABILI:
                 percorso = file_di(vero)
                 with self.subTest(scelto=scelto, file=vero):
                     if scelto == vero:
@@ -62,9 +65,7 @@ class TestControlliFile(unittest.TestCase):
             self.conv.converti_file(intestazione.encode(), "tracciato.csv", "Provider D", "4093", "202609")
 
     def test_nome_file_solo_avviso(self):
-        for provider in FILE:
-            if provider == "Provider C":
-                continue        # la copia di test di C è stata rinominata
+        for provider in PROVIDER_PROVABILI:
             self.assertIsNone(self.conv.avviso_nome_file(file_di(provider).name, provider))
         avviso = self.conv.avviso_nome_file(file_di("Provider B").name, "Provider A")
         self.assertIn("non è quello che di solito usa il Provider A", avviso)
