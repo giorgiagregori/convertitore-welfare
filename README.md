@@ -153,18 +153,21 @@ report del mese insieme**.
 streamlit run app_massivo.py
 ```
 
-1. **Periodo e file**: mese, anno e tutti i file in un colpo solo.
-2. **Controlla i file**: per ogni file l'app riconosce il **provider** dalle
-   colonne (lo stesso controllo che nell'app singola dice "il file sembra del
-   Provider B") e propone la **ditta** dai dipendenti. Ogni file ha uno stato:
-   ✅ pronto, ⚠️ da guardare (ditta da scegliere, nome del file insolito, provider
-   ambiguo), ❌ bloccato (non leggibile, di nessun provider, nessun dipendente in
-   anagrafica, caricato due volte). Provider e ditta si possono cambiare, e un
-   file si può escludere.
-3. **Esito**: una riga per ditta con file, provider, record, scarti, avvisi e
+1. **Cosa converti**: mese e anno, **uguali per tutti i file**, e i provider
+   da elaborare (scelta multipla, di partenza tutti).
+2. **Carica i file**: tutti i report insieme.
+3. **Riepilogo dei file**: una tabella, senza niente da scegliere file per file.
+   Per ogni file l'app riconosce il **provider** dalle colonne e la **ditta** dai
+   dipendenti, con lo stato: ✅ pronto, ⚠️ da guardare (es. nome del file
+   insolito), ❌ escluso con il motivo (non leggibile, di nessun provider, di un
+   provider non scelto, nessun dipendente in anagrafica, ditta non determinabile,
+   caricato due volte).
+4. **Ditte da convertire**: scelta multipla tra le ditte trovate nei file (di
+   partenza tutte), con il numero di file per ditta.
+5. **Esito**: una riga per ditta con file, provider, record, scarti, avvisi e
    quadratura.
-4. **Correzioni**, solo per le ditte con scarti, come nell'app singola.
-5. **Download**: uno zip con un file `VOCI_<ditta>_<AAAAMM>.txt` per ditta e un
+6. **Correzioni**, solo per le ditte con scarti, come nell'app singola.
+7. **Download**: uno zip con un file `VOCI_<ditta>_<AAAAMM>.txt` per ditta e un
    unico `SCARTI_<AAAAMM>.csv`, con in più le colonne File, Provider e Ditta.
 
 Regole del lotto (`convertitore/massivo.py`):
@@ -174,6 +177,9 @@ Regole del lotto (`convertitore/massivo.py`):
   dipendente sulla stessa voce viene sommato. La quadratura vale per ditta.
 - **Stesso file caricato due volte** (stesso contenuto, anche con nome diverso):
   il secondo viene bloccato, altrimenti gli importi raddoppierebbero.
+- **Ditta non determinabile** (pareggio o metà o meno dei dipendenti
+  riconosciuti): il file è escluso e va convertito con l'app singola, dove la
+  ditta si sceglie a mano.
 - Ogni movimento porta con sé il file di provenienza e il formato degli importi
   del suo provider, perché nello stesso lotto convivono formati diversi
   (`1.234,56` e `1,234.56`).

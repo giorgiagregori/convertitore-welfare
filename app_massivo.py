@@ -1,8 +1,9 @@
 """Convertitore welfare - caricamento massivo (Streamlit).
 
-Evoluzione dell'app singola (app.py): si caricano insieme tutti i report del
-mese, l'app riconosce provider e ditta di ogni file, l'operatore controlla un
-riepilogo e converte tutto in una volta. Esce uno zip con un file VOCI per ditta
+Evoluzione dell'app singola (app.py). Si scelgono il mese (uguale per tutti i
+file) e i provider, si caricano insieme tutti i report, l'app riconosce provider
+e ditta di ogni file e mostra un riepilogo; l'operatore sceglie quali ditte
+convertire e converte tutto in una volta. Esce uno zip con un file VOCI per ditta
 e un unico file SCARTI. Il motore e i controlli sono gli stessi dell'app singola.
 
 Avvio sul proprio computer:
@@ -50,90 +51,99 @@ def analisi_di(nome, contenuto, provider=None):
 
 # ------------------------------------------------------------------ intestazione
 st.title("Convertitore welfare · caricamento massivo")
-st.write("Carica tutti i report del mese insieme: l'app riconosce provider e ditta di ogni "
-         "file e produce un file VOCI per ditta, più un unico file SCARTI.")
+st.write("Scegli il mese e i provider, carica tutti i report insieme e decidi quali ditte "
+         "convertire: esce un file VOCI per ditta e un unico file SCARTI.")
 st.caption("I file caricati vengono elaborati in memoria e non vengono salvati.")
 
-# ------------------------------------------------------------------ 1. periodo e file
-st.subheader("1. Periodo e file")
+# ------------------------------------------------------------------ 1. filtri
+st.subheader("1. Cosa converti")
 oggi = date.today()
 anno_proposto, mese_proposto = mese_precedente(oggi)
 anni = anni_disponibili(oggi)
-col_mese, col_anno, _ = st.columns([2, 1, 3])
+col_mese, col_anno, col_prov = st.columns([2, 1, 4])
 mese = col_mese.selectbox("Mese del cedolino", range(1, 13), index=mese_proposto - 1,
                           format_func=lambda m: MESI[m - 1])
 anno = col_anno.selectbox("Anno", anni, index=anni.index(anno_proposto))
+providers_scelti = col_prov.multiselect("Provider", list(conv.providers), default=list(conv.providers),
+                                        placeholder="Scegli uno o più provider")
 periodo_scelto = periodo(anno, mese)
 avviso = avviso_periodo(anno, mese, oggi)
 if avviso:
     st.warning(avviso)
+st.caption(f"Il periodo {MESI[mese - 1]} {anno} vale per tutti i file caricati.")
 
-caricati = st.file_uploader("Report dei provider (puoi selezionarne tanti insieme)",
+# ------------------------------------------------------------------ 2. file
+st.subheader("2. Carica i file")
+caricati = st.file_uploader("Report dei provider: selezionali tutti insieme",
                             type=["xlsx", "xls", "csv"], accept_multiple_files=True)
+if not providers_scelti:
+    st.info("Scegli almeno un provider.")
+    st.stop()
 if not caricati:
     st.info("Carica i file per vedere il riepilogo.")
     st.stop()
 
-# ------------------------------------------------------------------ 2. riepilogo dei file
-st.divider()
-st.subheader("2. Controlla i file")
-st.caption("Provider e ditta sono proposti dall'app: puoi cambiarli. La ditta si sceglie tra "
-           "quelle dei dipendenti del file. I file bloccati non vengono convertiti.")
-
-scelte, visti = [], {}
-for i, file in enumerate(caricati):
+# Ogni file viene riconosciuto da solo: provider dalle colonne, ditta dai
+# dipendenti (gli stessi controlli dell'app singola). L'operatore non deve
+# scegliere nulla file per file: vede il riepilogo e decide quali ditte convertire.
+righe_riepilogo, validi, visti = [], [], {}
+for file in caricati:
     contenuto = file.getvalue()
     chiave_file = impronta(contenuto)
-    with st.container(border=True):
-        if chiave_file in visti:
-            st.markdown(f"{ICONA[BLOCCATO]} **{file.name}**")
-            st.error(f"Stesso contenuto di '{visti[chiave_file]}': caricato due volte, non viene convertito.")
-            continue
-        visti[chiave_file] = file.name
+    if chiave_file in visti:
+        righe_riepilogo.append((BLOCCATO, file.name, "", "", "",
+                                f"Stesso contenuto di '{visti[chiave_file]}': caricato due volte"))
+        continue
+    visti[chiave_file] = file.name
+    a = analisi_di(file.name, contenuto)
+    if a.stato == BLOCCATO:
+        righe_riepilogo.append((BLOCCATO, file.name, a.provider or "", "", "", a.errore))
+        continue
+    if a.provider not in providers_scelti:
+        righe_riepilogo.append((BLOCCATO, file.name, a.provider, "", "",
+                                f"{a.provider} non è tra i provider scelti"))
+        continue
+    if not a.ditta_proposta:
+        righe_riepilogo.append((BLOCCATO, file.name, a.provider, "", "",
+                                a.proposta.motivo + " Convertilo con l'app singola, scegliendo la ditta."))
+        continue
+    riconosciuti = f"{a.proposta.riconosciuti} su {a.proposta.dipendenti}"
+    righe_riepilogo.append((a.stato, file.name, a.provider, conv.etichetta_ditta(a.ditta_proposta),
+                            riconosciuti, " · ".join(a.avvisi)))
+    validi.append(a)
 
-        automatica = analisi_di(file.name, contenuto)
-        c_prov, c_ditta, c_incl = st.columns([2, 3, 1])
-        if automatica.compatibili or automatica.provider:
-            opzioni = list(conv.providers)
-            provider = c_prov.selectbox(
-                "Provider", opzioni, index=opzioni.index(automatica.provider) if automatica.provider else None,
-                key=f"prov_{chiave_file}", placeholder="Scegli il provider")
-        else:
-            provider = None
-        analisi = automatica if provider == automatica.provider else analisi_di(file.name, contenuto, provider)
+st.subheader("3. Riepilogo dei file")
+st.dataframe(
+    [{"Stato": ICONA[stato_f], "File": nome, "Provider": prov, "Ditta": ditta_f,
+      "Dipendenti riconosciuti": ric, "Note": note}
+     for stato_f, nome, prov, ditta_f, ric, note in righe_riepilogo],
+    hide_index=True, use_container_width=True)
+bloccati = sum(1 for r in righe_riepilogo if r[0] == BLOCCATO)
+if bloccati:
+    st.warning(f"{bloccati} file non verranno convertiti: il motivo è nella colonna Note.")
 
-        if analisi.stato == BLOCCATO:
-            st.markdown(f"{ICONA[BLOCCATO]} **{file.name}**")
-            st.error(analisi.errore)
-            continue
+if not validi:
+    st.stop()
 
-        per_ditta = analisi.proposta.per_ditta
-        ditte = list(per_ditta)
-        ditta = c_ditta.selectbox(
-            "Ditta", ditte, index=ditte.index(analisi.ditta_proposta) if analisi.ditta_proposta else None,
-            format_func=lambda d, pd=per_ditta, tot=analisi.proposta.dipendenti:
-                f"{conv.etichetta_ditta(d)} · {pd[d]} dipendenti su {tot}",
-            key=f"ditta_{chiave_file}_{provider}", placeholder="Scegli la ditta")
-        includi = c_incl.checkbox("Converti", value=True, key=f"incl_{chiave_file}")
+# ------------------------------------------------------------------ 4. ditte
+st.subheader("4. Ditte da convertire")
+file_per_ditta = {}
+for a in validi:
+    file_per_ditta.setdefault(a.ditta_proposta, []).append(a)
+ordine = sorted(file_per_ditta, key=lambda d: (len(d), d))
+ditte_scelte = st.multiselect(
+    "Ditte trovate nei file", ordine, default=ordine,
+    format_func=lambda d: f"{conv.etichetta_ditta(d)} ({len(file_per_ditta[d])} file)",
+    placeholder="Scegli le ditte")
+for d in ditte_scelte:
+    if len(file_per_ditta[d]) > 1:
+        st.info(f"La ditta {conv.etichetta_ditta(d)} riceve {len(file_per_ditta[d])} file "
+                f"({', '.join(a.nome for a in file_per_ditta[d])}): verranno uniti in un solo "
+                f"VOCI_{d}_{periodo_scelto}.txt.")
 
-        icona = ICONA[analisi.stato] if ditta else ICONA[DA_GUARDARE]
-        st.markdown(f"{icona} **{file.name}**")
-        for testo in analisi.avvisi:
-            st.warning(testo)
-        if ditta and analisi.ditta_proposta and ditta != analisi.ditta_proposta:
-            st.warning(f"Hai cambiato la ditta proposta ({conv.etichetta_ditta(analisi.ditta_proposta)}): "
-                       f"qui si riconoscono {per_ditta[ditta]} dipendenti su {analisi.proposta.dipendenti}.")
-        if includi and ditta:
-            scelte.append(Scelta(file.name, contenuto, provider, ditta))
-
-# Ditte che ricevono più file: un solo VOCI con i movimenti di tutti.
-gruppi = {}
-for s in scelte:
-    gruppi.setdefault(s.ditta, []).append(s)
-for ditta, lista in gruppi.items():
-    if len(lista) > 1:
-        st.info(f"La ditta {conv.etichetta_ditta(ditta)} riceve {len(lista)} file "
-                f"({', '.join(s.nome for s in lista)}): verranno uniti in un solo VOCI_{ditta}_{periodo_scelto}.txt.")
+scelte = [Scelta(a.nome, a.contenuto, a.provider, a.ditta_proposta)
+          for d in ditte_scelte for a in file_per_ditta[d]]
+gruppi = {d: file_per_ditta[d] for d in ditte_scelte}
 
 firma = (periodo_scelto, tuple((impronta(s.contenuto), s.provider, s.ditta) for s in scelte))
 if stato.get("firma") != firma:
@@ -148,7 +158,7 @@ def esegui():
 
 
 st.write(f"**{len(scelte)} file da convertire** su {len(caricati)} caricati, "
-         f"per {len(gruppi)} ditte.")
+         f"per {len(gruppi)} ditte, periodo {periodo_scelto}.")
 if st.button("Converti tutto", type="primary", disabled=not scelte, use_container_width=True):
     stato["correzioni"] = {}
     esegui()
@@ -159,7 +169,7 @@ if not lotto:
 
 # ------------------------------------------------------------------ 3. esito
 st.divider()
-st.subheader("3. Esito")
+st.subheader("5. Esito")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Ditte", len(lotto.per_ditta))
 c2.metric("Record prodotti", lotto.record)
@@ -194,7 +204,7 @@ da_correggere = {d: r for d, r in lotto.per_ditta.items()
                  if r.dipendenti_da_correggere or r.voci_da_correggere}
 if da_correggere:
     st.divider()
-    st.subheader("4. Correzioni (facoltative)")
+    st.subheader("6. Correzioni (facoltative)")
     st.caption("Solo le ditte con righe scartate. Lascia vuoto ciò che non vuoi correggere.")
     voci_note = sorted({r[1] for r in conv.tabella.righe}, key=lambda v: (len(v), v))
     nuove = {d: Correzioni(dict(c.dipendenti), dict(c.voci)) for d, c in stato["correzioni"].items()}
@@ -225,7 +235,7 @@ if da_correggere:
 
 # ------------------------------------------------------------------ 5. download
 st.divider()
-st.subheader("5. Scarica i file")
+st.subheader("7. Scarica i file")
 d1, d2 = st.columns(2)
 d1.download_button(f"Scarica tutto (zip: {sum(1 for r in lotto.per_ditta.values() if r.record)} "
                    "file VOCI + SCARTI)", lotto.file_zip(), file_name=lotto.nome_zip,
