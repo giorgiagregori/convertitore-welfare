@@ -60,22 +60,22 @@ st.subheader("1. Cosa converti")
 oggi = date.today()
 anno_proposto, mese_proposto = mese_precedente(oggi)
 anni = anni_disponibili(oggi)
-col_mese, col_anno, col_prov = st.columns([2, 1, 4])
+col_mese, col_anno = st.columns([2, 1])
 mese = col_mese.selectbox("Mese del cedolino", range(1, 13), index=mese_proposto - 1,
                           format_func=lambda m: MESI[m - 1])
 anno = col_anno.selectbox("Anno", anni, index=anni.index(anno_proposto))
-# Menu a tendina a scelta multipla, vuoto all'inizio: con tutti i provider già
-# selezionati la tendina risulterebbe vuota e sembrerebbe di non poter scegliere.
-tutti = col_prov.checkbox("Tutti i provider", value=False)
-providers_scelti = col_prov.multiselect(
-    "Provider (puoi sceglierne più di uno)", list(conv.providers),
-    default=list(conv.providers) if tutti else [], disabled=tutti,
-    placeholder="Apri il menu e scegli uno o più provider", key=f"providers_{tutti}")
 periodo_scelto = periodo(anno, mese)
 avviso = avviso_periodo(anno, mese, oggi)
 if avviso:
     st.warning(avviso)
 st.caption(f"Il periodo {MESI[mese - 1]} {anno} vale per tutti i file caricati.")
+# Menu a tendina a scelta multipla, vuoto all'inizio: con tutti i provider già
+# selezionati la tendina risulterebbe vuota e sembrerebbe di non poter scegliere.
+tutti = st.checkbox("Tutti i provider", value=False)
+providers_scelti = st.multiselect(
+    "Provider (puoi sceglierne più di uno)", list(conv.providers),
+    default=list(conv.providers) if tutti else [], disabled=tutti,
+    placeholder="Apri il menu e scegli uno o più provider", key=f"providers_{tutti}")
 
 # ------------------------------------------------------------------ 2. file
 st.subheader("2. Carica i file")
